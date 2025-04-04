@@ -9,17 +9,16 @@ A custom Linux utility which provides a fast, hotkey-activated voice-to-text sol
 
 ## Overview
 
-This project provides a streamlined workflow for converting spoken audio into text directly on a Linux desktop. It was developed to offer a more integrated and efficient alternative to web-based or heavier dictation software. By leveraging the power of OpenAI's Whisper model locally, it allows for quick transcription triggered by a simple hotkey press, with the resulting text automatically pasted into the active application.
+WhisperVTT is a lightweight, local voice-to-text solution for Linux desktops. By harnessing OpenAI's powerful Whisper model, it quickly converts spoken audio into text, copying it to your clipboard with a single hotkey press. No internet access or third party software needed.
 
 ## Features
 
 *   **Hotkey Activated:** Start recording instantly with a configurable global hotkey.
-*   **Whisper AI Integration:** Utilizes OpenAI's powerful Whisper model for accurate speech-to-text transcription.
+*   **Whisper AI Integration:** Uses OpenAI's powerful Whisper model for accurate speech-to-text transcription.
 *   **Local Processing:** Runs entirely locally, ensuring privacy and offline capability (after model download).
-*   **Automatic Pasting:** Transcribed text is automatically pasted into the currently focused window using `xdotool`.
-*   **Clipboard Fallback:** Text is also copied to the clipboard using `pyperclip`.
+*   **Clipboard Fallback:** Text is copied to the clipboard using `pyperclip`.
 *   **Hardware Targeting:** Attempts to automatically detect and use a specific microphone (e.g., "Poly Blackwire") for optimal input, falling back to the default device if necessary.
-*   **Optimized Model Loading:** Configured to use a specific Whisper model size (currently 'small') for a balance between speed and accuracy. Supports CUDA acceleration if a compatible GPU is detected.
+*   **Optimized Model Loading:** Configured to use a specific Whisper model size (currently 'tiny') for a balance between speed and accuracy. Supports CUDA acceleration if a compatible GPU is detected.
 *   **Virtual Environment:** Uses a Python virtual environment for clean dependency management.
 
 ## Technology Stack
@@ -42,7 +41,7 @@ The process from voice input to text output is as follows:
 4.  **Python Script Launch:** The main `whisper_vtt.py` script is executed.
 5.  **Initialization:**
     *   The script detects if a CUDA-enabled GPU is available and selects it, otherwise defaults to CPU.
-    *   It loads the pre-configured Whisper model (e.g., 'small') into memory using `whisper.load_model()`.
+    *   It loads the pre-configured Whisper model (e.g., 'tiny') into memory using `whisper.load_model()`.
     *   It searches for the preferred audio input device ("Poly Blackwire") using `sounddevice` and selects it, otherwise uses the system default.
 6.  **Recording:**
     *   A message "Recording... Press Ctrl+C to stop" is printed to the console where the script was launched (useful for debugging).
