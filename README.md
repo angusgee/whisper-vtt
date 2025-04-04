@@ -2,6 +2,11 @@
 
 A custom Linux utility which provides a fast, hotkey-activated voice-to-text solution using OpenAI's Whisper model.
 
+## 🚧 To-Do / Future Improvements 🚧
+
+*   **Automatic Audio Device Detection:** Currently, the script is hardcoded to look for a "Poly Blackwire" headset ([whisper_vtt.py#L27](cci:7://file:///home/loop/vtt-tool/whisper_vtt.py:27:0-27:0)). Future versions should automatically use the system default input device or allow user selection via configuration/arguments.
+*   **Improved Stop Mechanism:** Using `Ctrl+C` to stop recording works but isn't ideal when launched via a hidden hotkey. Exploring alternative triggers (e.g., second hotkey press, silence detection) would enhance usability.
+
 ## Overview
 
 This project provides a streamlined workflow for converting spoken audio into text directly on a Linux desktop. It was developed to offer a more integrated and efficient alternative to web-based or heavier dictation software. By leveraging the power of OpenAI's Whisper model locally, it allows for quick transcription triggered by a simple hotkey press, with the resulting text automatically pasted into the active application.
