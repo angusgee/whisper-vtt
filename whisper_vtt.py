@@ -31,9 +31,10 @@ class VoiceToText:
                 print(f"Found Poly Blackwire headset at device {i}, using sample rate {self.fs}Hz")
                 break
         
+        # Use default device if mine is not found
         if self.device is None:
             print("Could not find Poly Blackwire headset, using default device")
-            self.device = None  # Use default device
+            self.device = None  
         
     def start_recording(self):
         print("Recording... Press Ctrl+C to stop")
