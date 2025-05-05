@@ -94,7 +94,12 @@ class VoiceToText:
             
         print(f"Transcribing audio file: {self.audio_file} ({file_size} bytes)")
         try:
-            result = self.model.transcribe(self.audio_file, language="en")
+            # Use a Scottish accent prompt to improve transcription accuracy
+            result = self.model.transcribe(
+                self.audio_file, 
+                language="en",
+                initial_prompt="This is a Scottish person speaking English with a Scottish accent."
+            )
             transcribed_text = result["text"].strip()
             print(f"Transcribed: {transcribed_text}")
             return transcribed_text
