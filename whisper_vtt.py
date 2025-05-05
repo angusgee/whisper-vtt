@@ -37,7 +37,7 @@ class VoiceToText:
             self.device = None  
         
     def start_recording(self):
-        print("Recording... Press Ctrl+C to stop")
+        print("Recording... Press F8 to stop")
         self.recording = True
         self.recorded_frames = []
         
