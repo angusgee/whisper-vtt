@@ -125,9 +125,9 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
     
-    # Set 'tiny' model for faster loading
-    model_name = "tiny"
-    
+    # Configure model name here - tiny, base, medium, etc
+    # Make sure to run scripts/download_model.py first
+    model_name = "base"
     print(f"Selected model: {model_name}")
     vtt = VoiceToText(model_name=model_name)
     
