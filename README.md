@@ -5,7 +5,6 @@ A custom Linux utility which provides a fast, hotkey-activated voice-to-text sol
 ## 🚧 To-Do / Future Improvements 🚧
 
 *   **Automatic Audio Device Detection:** Currently, the script is hardcoded to look for a "Poly Blackwire" headset ([whisper_vtt.py#L27](cci:7://file:///home/loop/vtt-tool/whisper_vtt.py:27:0-27:0)). Future versions should automatically use the system default input device or allow user selection via configuration/arguments.
-*   **Improved Stop Mechanism:** Using `Ctrl+C` to stop recording works but isn't ideal when launched via a hidden hotkey. Exploring alternative triggers (e.g., second hotkey press, silence detection) would enhance usability.
 
 ## Overview
 
@@ -18,8 +17,10 @@ WhisperVTT is a lightweight, local voice-to-text solution for Linux desktops. By
 *   **Local Processing:** Runs entirely locally, ensuring privacy and offline capability (after model download).
 *   **Clipboard Fallback:** Text is copied to the clipboard using `pyperclip`.
 *   **Hardware Targeting:** Attempts to automatically detect and use a specific microphone (e.g., "Poly Blackwire") for optimal input, falling back to the default device if necessary.
-*   **Optimized Model Loading:** Configured to use a specific Whisper model size (currently 'tiny') for a balance between speed and accuracy. Supports CUDA acceleration if a compatible GPU is detected.
-*   **Virtual Environment:** Uses a Python virtual environment for clean dependency management.
+*   **Persistent Daemon:** The Whisper model loads once and stays in memory. Subsequent recordings start instantly with no model loading delay.
+*   **Desktop Notifications:** All feedback (recording status, transcription results) delivered via desktop notifications — no terminal window needed.
+*   **Optimized Model Loading:** Configurable Whisper model size (default 'base'). Supports CUDA acceleration if a compatible GPU is detected.
+*   **Virtual Environment:** Uses `uv` for fast, reproducible dependency management.
 
 ## Technology Stack
 
@@ -28,37 +29,18 @@ WhisperVTT is a lightweight, local voice-to-text solution for Linux desktops. By
 *   **Machine Learning Framework:** PyTorch (Whisper dependency, handles CPU/GPU execution)
 *   **Audio Handling:** `sounddevice` (recording), `soundfile` (saving WAV)
 *   **Clipboard:** `pyperclip`
-*   **Automation:** `xdotool` (for pasting)
-*   **Shell Scripting:** Bash (for wrapper script)
+*   **Notifications:** `notify-send` (desktop notifications)
+*   **Automation:** `xdotool` (for auto-pasting)
 
 ## Workflow
 
-The process from voice input to text output is as follows:
+The script runs as a persistent background daemon with a toggle hotkey:
 
-1.  **Hotkey Trigger:** The user presses the configured global hotkey (e.g., F8).
-2.  **Shell Script Execution:** The hotkey binding executes the `whisper_vtt.sh` script.
-3.  **Environment Activation:** `whisper_vtt.sh` activates the project's Python virtual environment (`venv`).
-4.  **Python Script Launch:** The main `whisper_vtt.py` script is executed.
-5.  **Initialization:**
-    *   The script detects if a CUDA-enabled GPU is available and selects it, otherwise defaults to CPU.
-    *   It loads the pre-configured Whisper model (e.g., 'tiny') into memory using `whisper.load_model()`.
-    *   It searches for the preferred audio input device ("Poly Blackwire") using `sounddevice` and selects it, otherwise uses the system default.
-6.  **Recording:**
-    *   A message "Recording... Press Ctrl+C to stop" is printed to the console where the script was launched (useful for debugging).
-    *   Audio recording starts via `sounddevice.InputStream`. Volume feedback is printed to the console.
-7.  **Stop Signal:** The user presses `Ctrl+C`.
-8.  **Transcription:**
-    *   A Python `signal_handler` catches the `SIGINT` (Ctrl+C) signal.
-    *   Recording stops, and the captured audio data is saved as a temporary `.wav` file using `soundfile`.
-    *   The `model.transcribe()` method processes the audio file.
-9.  **Output Handling:**
-    *   The transcribed text is extracted from the Whisper result.
-    *   The text is copied to the system clipboard using `pyperclip`.
-    *   The Python script prints the transcribed text and exits.
-10. **Pasting:**
-    *   Control returns to `whisper_vtt.sh`.
-    *   `xdotool key ctrl+v` is executed, simulating a paste action in the currently active window.
-11. **Cleanup:** The temporary audio file is deleted.
+1.  **First Hotkey Press:** If the daemon is not running, it starts in the background, loads the Whisper model into memory, and shows a "WhisperVTT ready" notification. Subsequent presses toggle recording.
+2.  **Hotkey Press (start recording):** A `SIGUSR1` signal toggles the daemon into recording mode. A "Recording..." notification appears.
+3.  **Hotkey Press (stop recording):** Another `SIGUSR1` signal stops the recording. The audio is transcribed, the text is copied to the clipboard, and `xdotool` simulates `Ctrl+V` to paste it into the active window. A notification shows a preview of the transcribed text.
+4.  **Daemon stays alive:** The model remains loaded in memory (GPU/CPU). The next recording starts instantly with no loading delay.
+5.  **Shutdown:** Sending `SIGINT` or `SIGTERM` to the daemon process cleanly shuts it down.
 
 ## AI Integration Details (Whisper)
 
@@ -73,8 +55,8 @@ This tool's core intelligence comes from OpenAI's Whisper, a state-of-the-art au
 
 1.  **Prerequisites:**
     *   Linux Operating System
-    *   Python 3.8+ and `pip`
-    *   `python3-venv` (usually installed via `sudo apt update && sudo apt install python3-venv` on Debian/Ubuntu)
+    *   Python 3.10+
+    *   [`uv`](https://docs.astral.sh/uv/) (install via `curl -LsSf https://astral.sh/uv/install.sh | sh`)
     *   `portaudio` development libraries (required by `sounddevice`):
         ```bash
         sudo apt update && sudo apt install portaudio19-dev
@@ -88,43 +70,34 @@ This tool's core intelligence comes from OpenAI's Whisper, a state-of-the-art au
     git clone <your-repo-url> vtt-tool
     cd vtt-tool
     ```
-3.  **Create Virtual Environment:**
+3.  **Install Dependencies:**
     ```bash
-    python3 -m venv venv
+    uv sync
     ```
-4.  **Activate Environment:**
+    This creates the virtual environment and installs all dependencies automatically.
+4.  **Download Whisper Model:** Pre-download the desired model to avoid delays on first use. Use the included script:
     ```bash
-    source venv/bin/activate
-    ```
-    *(Note: You'll need to activate the environment in each new terminal session before running the scripts directly, although the `whisper_vtt.sh` wrapper handles this automatically when run via hotkey).*
-5.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(We will create `requirements.txt` next).*
-6.  **Download Whisper Model:** Pre-download the desired model to avoid delays on first use. Use the included script:
-    ```bash
-    python scripts/download_model.py --model small
+    uv run python scripts/download_model.py --model small
     ```
     *(Replace `small` with `tiny`, `base`, `medium`, or `large` if you modify `whisper_vtt.py` later).*
-7.  **Configure Hotkey:**
-    *   Set up a global keyboard shortcut in your Linux desktop environment (e.g., KDE System Settings -> Shortcuts, GNOME Settings -> Keyboard -> Keyboard Shortcuts -> Custom Shortcuts).
-    *   Assign an unused key combination (like F8).
-    *   Set the command/action to execute the *full path* to the `whisper_vtt.sh` script:
-        `/home/loop/vtt-tool/whisper_vtt.sh` *(Adjust the path if you cloned it elsewhere)*.
+5.  **Configure Hotkey:**
+    *   Set up a global keyboard shortcut in your Linux desktop environment (e.g., KDE System Settings -> Shortcuts -> Custom Shortcuts).
+    *   Assign an unused key combination (e.g., `Meta+S`).
+    *   Set the command to:
+        `uv run --project /path/to/vtt-tool /path/to/vtt-tool/whisper_vtt.py` *(Adjust the path to your clone location)*.
 
 ## Usage
 
-1.  Ensure no conflicting application is using the chosen hotkey and that you have an application window ready to receive the pasted text.
-2.  Press the configured global hotkey (e.g., F8).
-3.  A new terminal opens and recording starts momentarily, shown by the volume indicator like `Volume: 15.23 |||||||||||||||`. Start speaking clearly.
-4.  When finished speaking, press `Ctrl+C`. This signal stops the recording and initiates transcription.
-5.  The terminal closes and the script will process the audio using the Whisper model.
-6.  The transcribed text will be copied to the system clipboard.
+1.  Press the configured global hotkey (e.g., `Meta+S`).
+2.  On first press, the daemon starts and loads the Whisper model. A "WhisperVTT ready" notification appears.
+3.  Press the hotkey again to start recording. A "Recording..." notification appears. Start speaking clearly.
+4.  Press the hotkey again to stop recording. The audio is transcribed, copied to the clipboard, and auto-pasted into the active window.
+5.  Subsequent recordings start instantly — the model stays loaded in memory.
 
 ## Customization
 
-*   **Whisper Model Size:** Edit `whisper_vtt.py` and change the `model_name = "small"` line (around line 129) to `"tiny"`, `"base"`, `"medium"`, etc. Remember to download the corresponding model using `scripts/download_model.py`.
-*   **Audio Input Device:** Modify the string `"Poly Blackwire"` in the `__init__` method of the `VoiceToText` class in `whisper_vtt.py` (around line 27) to match the name (or part of the name) of your preferred microphone as listed by audio utilities.
+*   **Whisper Model Size:** Edit `whisper_vtt.py` and change the `model_name = "base"` line in the `run_daemon()` function to `"tiny"`, `"small"`, `"medium"`, etc. Remember to download the corresponding model using `scripts/download_model.py`.
+*   **Audio Input Device:** Modify the string `"Poly Blackwire"` in the `__init__` method of the `VoiceToText` class in `whisper_vtt.py` to match the name (or part of the name) of your preferred microphone.
 *   **Hotkey:** Change the hotkey binding in your desktop environment's settings.
-*   **Paste Keystroke:** If `Ctrl+V` isn't the correct paste command for some specific application, modify the `xdotool key ctrl+v` line in `whisper_vtt.sh`.
+*   **Auto-paste:** If `Ctrl+V` isn't the correct paste command for a specific application, modify the `xdotool` call in the `paste_clipboard()` function in `whisper_vtt.py`.
+

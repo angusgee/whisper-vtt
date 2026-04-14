@@ -1,3 +1,7 @@
 venv/
+.venv/
 *.wav
 scripts/*.wav
+__pycache__/
+.whisper_vtt.pid
+whisper_vtt.log
